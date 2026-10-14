@@ -1,7 +1,7 @@
 # ActivePipeline
 
 [![CI](https://github.com/thrashattack/active_pipeline/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/thrashattack/active_pipeline/actions/workflows/ci.yml)
-[![Coverage Status](https://coveralls.io/repos/github/thrashattack/active_pipeline/badge.svg?branch=main)](https://coveralls.io/github/thrashattack/active_pipeline?branch=main)
+[![Coverage Status](https://coveralls.io/repos/github/Thrashattack/active_pipeline/badge.svg?branch=main)](https://coveralls.io/github/thrashattack/active_pipeline?branch=main)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.txt)
 
 Transparent, Go-channel-like write batching for ActiveRecord on PostgreSQL.
