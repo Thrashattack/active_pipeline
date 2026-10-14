@@ -10,14 +10,14 @@ module ActivePipeline
     TABLE_REGEX = %r{
       \A\s*(?:/\*.*?\*/\s*)*                  # leading query-log comments
       (?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+
-      (#{IDENTIFIER}(?:\s*\.\s*#{IDENTIFIER})?) # optionally schema-qualified
+      (#{IDENTIFIER}(?:\.#{IDENTIFIER})?)       # optionally schema-qualified
     }mix
 
     attr_reader :operation, :sql, :binds, :db_config, :table_name
 
     def self.table_name_for(sql)
       match = TABLE_REGEX.match(sql)
-      match && match[1].gsub(/\s+/, "").delete('"')
+      match && match[1].delete('"')
     end
 
     def initialize(operation:, sql:, binds:, db_config:)

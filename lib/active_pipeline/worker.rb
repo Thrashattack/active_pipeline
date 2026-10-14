@@ -24,19 +24,18 @@ module ActivePipeline
 
       @pid = Process.pid
       @thread = Thread.new { run_loop }
-      @thread.name = "active_pipeline" if @thread.respond_to?(:name=)
+      @thread.name = "active_pipeline"
     end
 
     # Closes the queue, lets the thread drain whatever is already queued and
     # releases the connections.
     def stop!
-      return unless @thread
-      # A forked child shares the parent's sockets: closing them would kill the
-      # parent's sessions, so the inherited worker is simply abandoned.
-      return @queue.close if forked?
+      # A forked child has no worker thread and shares the parent's sockets:
+      # closing them would kill the parent's sessions, so it is left untouched.
+      return if @thread.nil? || forked?
 
       @queue.close
-      @thread.join
+      join_thread
       reject_leftovers(Error.new("ActivePipeline worker stopped"))
     end
 
@@ -55,23 +54,34 @@ module ActivePipeline
 
     private
 
+    # Thread#join re-raises a crash that the thread already reported.
+    def join_thread
+      @thread.join
+    rescue StandardError
+      nil
+    end
+
     def forked?
       @pid != Process.pid
     end
 
     def run_loop
       while (first = @queue.pop)
-        process_batch(collect_batch(first))
+        batch = [first]
+        collect_batch(batch)
+        process_batch(batch)
       end
     rescue Exception => e # rubocop:disable Lint/RescueException
+      # The thread is dying: release every caller instead of leaving it parked.
+      # running? turns false, so later writes fall back to regular ActiveRecord.
+      batch&.each { |payload| payload.reject(e) }
       reject_leftovers(e)
       raise
     ensure
       disconnect_all
     end
 
-    def collect_batch(first)
-      batch = [first]
+    def collect_batch(batch)
       deadline = monotonic_now + (ActivePipeline.batch_window_ms / 1000.0)
 
       while batch.size < ActivePipeline.max_batch_size
@@ -83,8 +93,6 @@ module ActivePipeline
 
         batch << payload
       end
-
-      batch
     end
 
     def process_batch(batch)
